@@ -57,7 +57,8 @@ Next up, I generate a general lookup table from the raw json, similar to what I 
     enter_object('dimensions') %>% 
     enter_object('observation') %>%                         # navigate to 'observation level'
     gather_array %>%                                        # Dive into each array element
-    spread_values(keyPosition = jstring('keyPosition'), name = jstring('name')) %>% # Keep keyPosition and name information
+    spread_values(keyPosition = jstring('keyPosition'),     # Keep keyPosition and name                                                                   information
+    name = jstring('name')) %>% 
     enter_object('values') %>%                              # enter values array to get the encoding for keys 4, 6, and 8 (building type, region and time period)
     gather_array %>%                                        # Dive into each array element
     spread_values(array_value = jstring('name')) %>%        # Keep meaningful name for every index position within array 
