@@ -2,6 +2,9 @@
 
 Main purpose: given housing data from the Australian Bureau of Statistics, transform SDMX JSON into timestamp-indexed tabular format, then perform modeling to come up with a 3-year forecast. Subtasks as outlined below.
 
+In this README, I will walk the reader through the steps that I took to transform the data and to try to come up with a useful forecast. Although the code is written in R for the very simple reason that I am more familiar with it, I found a very similar way to implement the code in python, but I could not fully implement that due to lack of time. 
+
+
 ## Requirements
 
 I used packages dplyr, jsonlite, tidyjson, tidyr, forecast, and ggplot
@@ -138,6 +141,29 @@ or alternatively using the worked through json file and ggplot2:
 Both should give the same end result:
 
 ![timeseries](figures/basic_plot_total_dwellings_NSW copy.pdf)
-
+![testimage](figures/Screen Shot 2018-11-07 at 23.55.01.png)
+![testimagefromweb](https://www.google.de/url?sa=i&source=images&cd=&cad=rja&uact=8&ved=2ahUKEwjN46WxsMPeAhXRYlAKHSFxD3MQjRx6BAgBEAU&url=https%3A%2F%2Fwww.pexels.com%2Fsearch%2Fdog%2F&psig=AOvVaw0nVhbj0U-feFzzRbeW_pDM&ust=1541717766435894)
+[testlink](google.com)
 
 #### Using ARIMA models
+
+
+### Challenges and conclusions
+
+Finally, I would like to spend a few lines on the challenges that this exercise posed, how I tried to tackle them, as well as on some of the thoughts and conclusions I was able to draw from the exercise. 
+
+#### Challenges
+
+1. Challenge # 1: reading a json file into R and **navigating it**
+    1. The answer here was not too
+2. Challenge # 2: Understand the structure of the SDMX-JSON
+3. Challenge # 3: Working with time series
+4. Challenge # 4: Understanding basics of forecasting
+5.  
+
+#### Thoughts and conclusions - a.k.a. 'how I would do things differently if faced with the same task again'
+
+1. I learned about tidyjson and know how to use it and how to navigate, gather arrays and expand on relevant sections of data. Happy that I found the tidy version of a json reader!
+2. SDMX-JSON structure: not sure I would greatly support this kind of data presentation...but I know how to wrap my head around it and handle it now!
+3. Working with time series: difficult, but fun! I really enjoyed the course I worked through from Robert Hyndman, kudos to him for the great teaching material he has all over the web!
+4. Basics of forecasting: I'm obviously still in my infancy regarding my understanding of forecasting models, but I have at least grasped basic concepts, such as seasonality, trends, ETS models, ARIMA models and how to evaluate those!
