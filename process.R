@@ -2,12 +2,13 @@
 ###### pre-requisites ################
 ######################################
 
-devtools::install_github("sailthru/tidyjson")
-
 require(dplyr)
 require(jsonlite)
 require(tidyjson)
 require(tidyr)
+require(forecast)
+require(ggplot2)
+
 
 ######################################
 ###### read in data ##################
@@ -103,13 +104,9 @@ jsonTabularAnnotated %>% filter(region == 'New South Wales') %>%
 filter(timestamp == '2011-07-01', building_type == 'Houses') 
 
 
-#####################################
-######### Forecasting    ############
-#####################################
-
-require(forecast)
-require(ggplot2)
-
+########################################################
+######### Preparing data for forecasting    ############
+########################################################
 
 aggrPerRegion = 
 jsonTabularAnnotated %>% 
@@ -141,18 +138,26 @@ summarise(total = sum(Number.of.new.dwelling.units))
 
 tsdataNSW = ts(aggrNSW[,'total'], start = c(2011, 7), end = c(2017, 7),  frequency = 12)
 
-autoplot(tsdataNSW)
-ggseasonplot(tsdataNSW, polar = FALSE)
-ggsubseriesplot(tsdataNSW)
 
-decompose(tsdataNSW) %>% autoplot()
+# Visualize data
 
+autoplot(tsdataNSW) 
 
 ggplot(aggrNSW, aes(timestamp, total)) + 
 geom_line() + 
 scale_x_date('month') + 
 ylab('Number of new dwellings') + 
 xlab('')
+
+
+
+
+ggseasonplot(tsdataNSW, polar = FALSE)
+ggsubseriesplot(tsdataNSW)
+
+decompose(tsdataNSW) %>% autoplot()
+
+
 
 
 

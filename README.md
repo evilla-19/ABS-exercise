@@ -115,6 +115,30 @@ Sanity check to make sure that values align with an independent extraction:
 ### Task 3: 3-year forecast
 
 I will be using the ['forecast']() package to have a go at forecasting the time series. 
+
 **Important note**: since I was not familiar with forecasting models before this task, the first thing I did was inform myself to have a guide. I worked through [this datacamp course](https://campus.datacamp.com/courses/forecasting-using-r/) to get acquainted with methods and concepts, which will be applied to the best of my judgement in the following sections.
+
+
+First convert data to a time series. For the purpose of the exercise and simplicity, I decided to focus on total number of new dwellings (regardless of builsing type) in New South Wales only.
+
+    tsdataNSW = ts(aggrNSW[,'total'], start = c(2011, 7), end = c(2017, 7),  frequency = 12)
+
+Plot to see the time series of new dwellings in New South Wales between 2011 and 2017
+
+    autoplot(tsdataNSW)
+
+or alternatively using the worked through json file and ggplot2:
+
+    ggplot(aggrNSW, aes(timestamp, total)) + 
+    geom_line() + 
+    scale_x_date('month') + 
+    ylab('Number of new dwellings') + 
+    xlab('')
+
+Both should give the same end result:
+
+
+![](figures/basic_plot_total_dwellings_NSW.pdf)
+
 
 #### Using ARIMA models
