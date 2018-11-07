@@ -140,7 +140,7 @@ or alternatively using the worked through json file and ggplot2:
 
 Both should give the same end result:
 
-<img src='figures/basic_plot_total_dwellings_NSW.png' alt='NSW time series' title='Total number of new dwellings in New South Wales'/>
+<img src='/figures/basic_plot_total_dwellings_NSW.png' alt='NSW time series' title='Total number of new dwellings in New South Wales'/>
         
       
 #### Using ARIMA models
