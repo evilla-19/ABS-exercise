@@ -4,7 +4,6 @@
 
 devtools::install_github("sailthru/tidyjson")
 
-
 require(dplyr)
 require(jsonlite)
 require(tidyjson)
@@ -108,8 +107,6 @@ filter(timestamp == '2011-07-01', building_type == 'Houses')
 ######### Forecasting    ############
 #####################################
 
-
-install.packages('forecast')
 require(forecast)
 require(ggplot2)
 
@@ -120,21 +117,27 @@ group_by(timestamp, region) %>%
 summarise(total = sum(Number.of.new.dwelling.units))
 
 
-housesNSW = 
-jsonTabularAnnotated %>% 
-filter(region == 'New South Wales') %>% 
-filter(building_type == 'Houses')
+# housesNSW = 
+# jsonTabularAnnotated %>% 
+# filter(region == 'New South Wales') %>% 
+# filter(building_type == 'Houses')
 
+
+
+# head(jsonTabularAnnotated) %>% )
+# jsonTabularAnnotated %>% group_by(region) %>% summarize(total_new = sum(Number.of.new.dwelling.units))
+
+aggrNSW = aggrPerRegion %>% filter(region == 'New South Wales')
+
+## Sanity check to see if the first value is what was exepcted, i.e. 8758:
 
 jsonTabularAnnotated %>% 
 filter(region == 'New South Wales') %>% 
 filter(timestamp == '2011-07-01') %>%
 summarise(total = sum(Number.of.new.dwelling.units))
 
-# head(jsonTabularAnnotated) %>% )
-# jsonTabularAnnotated %>% group_by(region) %>% summarize(total_new = sum(Number.of.new.dwelling.units))
 
-aggrNSW = aggrPerRegion %>% filter(region == 'New South Wales')
+## convert into time series
 
 tsdataNSW = ts(aggrNSW[,'total'], start = c(2011, 7), end = c(2017, 7),  frequency = 12)
 
@@ -205,7 +208,7 @@ autoplot(tsdataNSW)
 
 tsdataNSW %>% nnetar() %>% forecast(PI = TRUE, h = 36) %>% autoplot()
 
-x <- list()
+aiccs <- list()
 count = 1
 for(i in 0:1){
   for(j in 0:1){
@@ -213,25 +216,42 @@ for(i in 0:1){
           for(z in 0:1){
               for(m in 0:1){
                   for(l in 0:1){
-                        fit <- Arima(tsdataNSW, order=c(i,j,w), seasonal = list(order = c(z,m,l), period = 12), method = 'ML')
-                        # acc <- accuracy(fit)
-                        x[[count]] <- fit$aicc # Number 5 indicates the position of MAPE in the accuracy list
+                      try(
+                          {
+                            fit <- Arima(tsdataNSW, order=c(i,j,w), seasonal = list(order = c(z,m,l), period = 12), method = 'ML');
+                            # acc <- accuracy(fit)
+                            aiccs[[count]] <- fit$aicc # Number 5 indicates the position of MAPE in the accuracy list
+                          }
+                      )
                         paramCombination = paste0('(p,d,q)', '(', paste(i,j,w, sep = ','), ')', '(P,D,Q)', '(',paste(z,m,l, sep = ','), ')', '(12)', ' - ', fit$aicc)
-                        names(x[[count]]) = paramCombination
+                        names(aiccs[[count]]) = paramCombination
                     print(count)
                     print(paste0('(p,d,q)', '(', paste(i,j,w, sep = ','), ')', '(P,D,Q)', '(',paste(z,m,l, sep = ','), ')', '(12)', ' - ', fit$aicc))
                     count = count + 1
 }}}}}}
 
-minAICc = min(unlist(x))
+minAICc = min(unlist(aiccs))
 indexMinAICc = which(x == minAICc)
-x[[indexMinAICc]]
+x[[28]]
 
 
 
-tsdataNSW %>% Arima(order = c(10,1,1), seasonal = list(order = c(10,1,1), period = 12), method = 'ML') %>% forecast(h = 36) %>% autoplot()
+### Cross validation
+
+trainNSW = subset(tsdataNSW, end = length(tsdataNSW)-12)
+
+trainNSW %>% Arima(order = c(0,1,1), seasonal = list(order = c(0,1,1), period = 12), method = 'ML') %>% forecast(h = 12) %>% autoplot()
+
+testNSW  = subset(tsdataNSW, start = length(tsdataNSW)-11)
+
+fit = trainNSW %>% Arima(order = c(0,1,1), seasonal = list(order = c(0,1,1), period = 12), method = 'ML') %>% forecast(h = 12)
 
 
+
+autoplot(tsdataNSW) + autolayer(fit) + autolayer(fitted(fit))
+
+autoplot(tsdataNSW)
+autoplot(fit)
 
 
 ?Arima
