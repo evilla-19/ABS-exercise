@@ -32,8 +32,8 @@ gather_array %>%                                        # enter array
 enter_object('observations') %>%                        # enter observations
 gather_keys() %>%                                       # get they keys, which will be decoded  
 gather_array %>%                                        # enter the array
-append_values_number('array_values')                    # get the array value data
-%>% data.frame()                                        # convert into df
+append_values_number('array_values') %>%                # get the array value data
+data.frame()                                            # convert into df
 
 
 
@@ -101,7 +101,7 @@ arrange(timestamp) # arrange by timestamp
 #### Sanity Check: get new dwelling units in New South Wales in July 2011,check that it matches expected 1511.0
 
 jsonTabularAnnotated %>% filter(region == 'New South Wales') %>% 
-filter(timestamp == '2011-07-01') 
+filter(timestamp == '2011-07-01', building_type == 'Houses') 
 
 
 #####################################
@@ -111,14 +111,154 @@ filter(timestamp == '2011-07-01')
 
 install.packages('forecast')
 require(forecast)
+require(ggplot2)
 
 
-ts = ts(jsonTabularAnnotated %>% select(c(timestamp, Number.of.new.dwelling.units)))
+aggrPerRegion = 
+jsonTabularAnnotated %>% 
+group_by(timestamp, region) %>% 
+summarise(total = sum(Number.of.new.dwelling.units))
 
-mf = meanf(ts[,1],h=12,level=c(90,95),fan=FALSE,lambda=NULL)
-plot(mf) 
-accuracy(mf)
 
-plot(ts(jsonTabularAnnotated %>% select(c(timestamp, Number.of.new.dwelling.units))), type = 'o', col = 'red')
+housesNSW = 
+jsonTabularAnnotated %>% 
+filter(region == 'New South Wales') %>% 
+filter(building_type == 'Houses')
 
-ts()
+
+jsonTabularAnnotated %>% 
+filter(region == 'New South Wales') %>% 
+filter(timestamp == '2011-07-01') %>%
+summarise(total = sum(Number.of.new.dwelling.units))
+
+# head(jsonTabularAnnotated) %>% )
+# jsonTabularAnnotated %>% group_by(region) %>% summarize(total_new = sum(Number.of.new.dwelling.units))
+
+aggrNSW = aggrPerRegion %>% filter(region == 'New South Wales')
+
+tsdataNSW = ts(aggrNSW[,'total'], start = c(2011, 7), end = c(2017, 7),  frequency = 12)
+
+autoplot(tsdataNSW)
+ggseasonplot(tsdataNSW, polar = FALSE)
+ggsubseriesplot(tsdataNSW)
+
+decompose(tsdataNSW) %>% autoplot()
+
+
+ggplot(aggrNSW, aes(timestamp, total)) + 
+geom_line() + 
+scale_x_date('month') + 
+ylab('Number of new dwellings') + 
+xlab('')
+
+
+
+ets = tsdataNSW %>% ets() %>% forecast()
+checkresiduals(ets)
+tsdataNSW %>% ets() %>% forecast() %>% autoplot()
+
+
+hw = tsdataNSW %>% hw(seasonal = 'additive', h = 36, damped = FALSE)
+checkresiduals(hw)
+autoplot(hw)
+
+naive = tsdataNSW %>% snaive( h = 36) 
+autoplot(naive)
+
+tsdataNSW %>% ses(h = 36) %>% autoplot()
+
+
+tsdataNSW %>% ets() %>% forecast(h = 36) %>% autoplot()
+
+autoplot(tsdataNSW)
+autoplot(diff(diff(log(tsdataNSW), lag = 12)))
+ggAcf(diff(diff(log(tsdataNSW), lag = 12)))
+
+
+
+fit = auto.arima(tsdataNSW)
+summary(fit)
+autoplot(forecast(fit, h = 36))
+# auto.arima(diff(diff(log(tsdataNSW), lag = 12))) %>% forecast(h = 36) %>% autoplot()
+
+ ## best model so far by visual inspection!!
+Arima(tsdataNSW, order = c(40,1,1), include.constant = TRUE) %>% forecast(h= 36) %>% autoplot() ## best model so far by visual inspection!!
+
+auto.arima(tsdataNSW, lambda = 0) %>% forecast(h = 6) %>% autoplot()
+
+autoplot(tsdataNSW)
+
+library(fpp2)
+data(debitcards)
+autoplot(debitcards)
+fit = auto.arima(debitcards, lambda = 0) 
+fit %>% forecast(h = 36) %>% aut4plot()
+# log-transformation
+
+# ts = ts(jsonTabularAnnotated %>% select(c(timestamp, Number.of.new.dwelling.units)))
+auto.arima(tsdataNSW, lambda = 0, stepwise = FALSE) %>% forecast(h = 18) %>% autoplot()
+
+
+meanf(tsdataNSW, h = 6) %>% autoplot()
+
+autoplot(tsdataNSW)
+
+tsdataNSW %>% nnetar() %>% forecast(PI = TRUE, h = 36) %>% autoplot()
+
+x <- list()
+count = 1
+for(i in 0:1){
+  for(j in 0:1){
+      for(w in 0:1){
+          for(z in 0:1){
+              for(m in 0:1){
+                  for(l in 0:1){
+                        fit <- Arima(tsdataNSW, order=c(i,j,w), seasonal = list(order = c(z,m,l), period = 12), method = 'ML')
+                        # acc <- accuracy(fit)
+                        x[[count]] <- fit$aicc # Number 5 indicates the position of MAPE in the accuracy list
+                        paramCombination = paste0('(p,d,q)', '(', paste(i,j,w, sep = ','), ')', '(P,D,Q)', '(',paste(z,m,l, sep = ','), ')', '(12)', ' - ', fit$aicc)
+                        names(x[[count]]) = paramCombination
+                    print(count)
+                    print(paste0('(p,d,q)', '(', paste(i,j,w, sep = ','), ')', '(P,D,Q)', '(',paste(z,m,l, sep = ','), ')', '(12)', ' - ', fit$aicc))
+                    count = count + 1
+}}}}}}
+
+minAICc = min(unlist(x))
+indexMinAICc = which(x == minAICc)
+x[[indexMinAICc]]
+
+
+
+tsdataNSW %>% Arima(order = c(10,1,1), seasonal = list(order = c(10,1,1), period = 12), method = 'ML') %>% forecast(h = 36) %>% autoplot()
+
+
+
+
+?Arima
+str(Arima(tsdataNSW, order = c(1,1,1)))
+
+accuracy(fit)[2]
+
+
+
+
+
+
+
+library(fpp2)
+data(debitcards)
+autoplot(debitcards)
+fit = auto.arima(debitcards, lambda = 0) 
+fit %>% forecast(h = 36) %>% autoplot()
+# log-transformation
+
+
+# mf = meanf(ts[,1],h=12,level=c(90,95),fan=FALSE,lambda=NULL)
+# plot(mf) 
+# accuracy(mf)
+
+# plot(ts(jsonTabularAnnotated %>% select(c(timestamp, Number.of.new.dwelling.units))), type = 'o', col = 'red')
+
+# ts()
+
+## can't really use training-test set, so will use tsCV, check the MSE and compare ETS to auto arima to see which gives the smallest error
