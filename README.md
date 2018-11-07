@@ -137,7 +137,7 @@ or alternatively using the worked through json file and ggplot2:
 
 Both should give the same end result:
 
-![](figures/basic_plot_total_dwellings_NSW copy.pdf)
+![timeseries](figures/basic_plot_total_dwellings_NSW copy.pdf)
 
 
 #### Using ARIMA models
