@@ -144,6 +144,7 @@ Both should give the same end result:
 ![testimage](figures/Screen Shot 2018-11-07 at 23.55.01.png)
 ![testimagefromweb](https://www.google.de/url?sa=i&source=images&cd=&cad=rja&uact=8&ved=2ahUKEwjN46WxsMPeAhXRYlAKHSFxD3MQjRx6BAgBEAU&url=https%3A%2F%2Fwww.pexels.com%2Fsearch%2Fdog%2F&psig=AOvVaw0nVhbj0U-feFzzRbeW_pDM&ust=1541717766435894)
 [testlink](google.com)
+\includegraphics{figures/Screen Shot 2018-11-07 at 23.55.01.png}
 
 #### Using ARIMA models
 
