@@ -137,8 +137,7 @@ or alternatively using the worked through json file and ggplot2:
 
 Both should give the same end result:
 
-
-![](https://www.google.de/url?sa=i&source=images&cd=&cad=rja&uact=8&ved=2ahUKEwis2dPcrMPeAhVQJFAKHUK1DCAQjRx6BAgBEAU&url=https%3A%2F%2Fwww.rover.com%2Fblog%2Fgreatest-dog-memes%2F&psig=AOvVaw1G5pHY7tSwrRdXCg1as45I&ust=1541716771140924)
+![](figures/basic_plot_total_dwellings_NSW copy.pdf)
 
 
 #### Using ARIMA models
