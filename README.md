@@ -57,7 +57,7 @@ Next up, I generate a general lookup table from the raw json, similar to what I 
     spread_values(keyPosition = jstring('keyPosition'), name = jstring('name')) %>% # Keep keyPosition and name information
     enter_object('values') %>%                              # enter values array to get the encoding for keys 4, 6, and 8 (building type, region and time period)
     gather_array %>%                                        # Dive into each array element
-    spread_values(array_value = jstring('name')) %>% # Keep meaningful name for every index position within array 
+    spread_values(array_value = jstring('name')) %>%        # Keep meaningful name for every index position within array 
     mutate(array_key = array.index - 1)                     # Add a column for 0-based indexing of array keys
 
 I will generate a LUT (lookup table) for each variable I want to keep: building type, region and timestamp
