@@ -114,7 +114,7 @@ Sanity check to make sure that values align with an independent extraction:
 
 ### Task 3: 3-year forecast
 
-I will be using the 'forecast' package to have a go at forecasting the time series. 
+I will be using the ['forecast']() package to have a go at forecasting the time series. 
 **Important note**: since I was not familiar with forecasting models before this task, the first thing I did was inform myself to have a guide. I worked through [this datacamp course](https://campus.datacamp.com/courses/forecasting-using-r/) to get acquainted with methods and concepts, which will be applied to the best of my judgement in the following sections.
 
 #### Using ARIMA models
