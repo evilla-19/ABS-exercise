@@ -141,7 +141,7 @@ tsdataNSW = ts(aggrNSW[,'total'], start = c(2011, 7), end = c(2017, 7),  frequen
 
 # Visualize data
 
-autoplot(tsdataNSW) 
+autoplot(tsdataNSW) + ylab('Number of new dwellings in New South Wales') 
 
 ggplot(aggrNSW, aes(timestamp, total)) + 
 geom_line() + 
