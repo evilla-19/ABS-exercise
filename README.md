@@ -147,6 +147,9 @@ Both should give the same end result:
 
 It looks like there's both a trend and a seasonal component. The seasonal plot clearly shows that the latest years have more total number of new dwellings:
 
+    ggseasonplot(tsdataNSW, polar = FALSE)                                      # seasonal plot
+
+
 <img src='/figures/total_dwellings_NSW_seasonal.png' alt='NSW seasonal' title='Total number of new dwellings in New South Wales - Seasonal'/>
 
 Next I will decompose and plot seasonal and trend componentes to visualize them better:
@@ -263,6 +266,8 @@ Finally, let's produce the forecast for the 3 years as requested in the exercise
 These look reasonsably normally distributed and the Ljung-Box test is non-significant, although borderline, probably due to the first flat part of the residuals data.
 
 Finally, let's plot the 3 year forecast:
+
+    autoplot(fcARIMA) + ylab('Number of new dwellings in New South Wales')
 
 <img src='figures/ARIMA_prediction_3_years.png' />
 
