@@ -1,1 +1,0 @@
-devtools::install_github("sailthru/tidyjson") ## installation of tidyjson 
