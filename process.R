@@ -68,10 +68,6 @@ mutate(array_key = array.index - 1)                     # Add a column for 0-bas
 
 ## individual LUTS for each informative variable  ##
 
-###############
-## TO-DO: filter all on name instead of keyPosition? ##
-###############
-
 buildingTypeLUT = generalLUT %>% filter(keyPosition == 3) %>% select(c(array_key, array_value)) 
 regionLUT = generalLUT %>% filter(keyPosition == 5) %>% select(c(array_key, array_value)) 
 timestampLUT = generalLUT %>% filter(name == 'Time') %>% select(c(array_key, array_value)) 

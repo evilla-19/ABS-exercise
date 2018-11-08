@@ -76,7 +76,7 @@ And then map these onto the jsonTabular object, also handling conversin of times
     jsonTabularFiltered %>% mutate(building_type = recode(key4, !!!buildingTypeLUT)) %>% # buildingType LUT
     mutate(region = recode(key6, !!!regionLUT)) %>%                                      # region LUT
     mutate(timestamp = recode(key8, !!!timestampLUT)) %>%                                # time LUT
-    mutate(timestamp = as.Date(paste('01', timestamp, sep = '-'), format = '%d-%b-%Y'))  # convert 
+    mutate(timestamp = as.Date(paste('01', timestamp, sep = '-'), format = '%d-%b-%Y'))  # convert timestamp to date
 
 Clean up once more to get the final object to work with:
 
@@ -226,7 +226,13 @@ Generate the parameter space and come up with a function that will iterate throu
         return(list(aiccs, rsme))
     }
 
-Execute the function, then get the minimum value for AICc and print out the parameter combination:
+Execute the function, then get the minimum value for AICc and print out the parameter combination for which AICc is minimized:
+
+The output of the function looks like this:
+
+<img src='figures/sample_param_screening.png' />
+
+
 
     scanningOutput = scanParam()
     
