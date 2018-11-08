@@ -123,7 +123,7 @@ I will be using the ['forecast'](https://cran.r-project.org/web/packages/forecas
 **Important note**: since I was not familiar with forecasting models before this task, the first thing I did was inform myself to have a guide. I worked through [this datacamp course](https://campus.datacamp.com/courses/forecasting-using-r/) and [this book](https://otexts.org/fpp2/limits.html) to get acquainted with methods and concepts, which will be applied to the best of my judgement in the following sections.
 
 
-First convert data to a time series. For the purpose of the exercise and simplicity, I decided to focus on total number of new dwellings (regardless of builsing type) in New South Wales only.
+First convert data to a time series. For the purpose of the exercise and simplicity, I decided to focus on total number of new dwellings (regardless of building type) in New South Wales only.
 
     tsdataNSW = ts(aggrNSW[,'total'], start = c(2011, 7), end = c(2017, 7),  frequency = 12)
 
