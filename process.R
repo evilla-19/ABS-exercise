@@ -1,13 +1,13 @@
 ######################################
-###### pre-requisites ################
+###### load libraries ################
 ######################################
 
-require(dplyr)
-require(jsonlite)
-require(tidyjson)
-require(tidyr)
-require(forecast)
-require(ggplot2)
+library(dplyr)
+library(jsonlite)
+library(tidyjson)
+library(tidyr)
+library(forecast)
+library(ggplot2)
 
 
 ######################################
@@ -23,7 +23,7 @@ json = read_json('ABS_data.json')
 
 
 
-#### Transform json into tidy data.frame, extract relevant information
+## Transform json into tidy data.frame, extract relevant information ##
 
 jsonTabular = 
 json %>% as.tbl_json %>%                                # conver to tibble
@@ -43,16 +43,16 @@ jsonTabularExpanded =
 jsonTabular %>% separate(key, keys, ':')                # separate each of the 8 keys into a column
 
 jsonTabularFiltered = 
-jsonTabularExpanded %>% select(-c('key1', 'key2', 'key3', 'key5', 'key7')) %>%  # get rid of non-informative keys
-filter(array.index == 1)                                                        # keep only index 1, corresponding to number of dwelling units
+jsonTabularExpanded %>% select(-c('key1', 'key2',
+'key3', 'key5', 'key7')) %>%                            # get rid of non-informative keys
+filter(array.index == 1)                                # keep only index 1, corresponding to number of dwelling units
 
-# head(jsonTabularFiltered, 10) # sanity check
 
 jsonTabularFiltered = 
 jsonTabularFiltered %>% rename(Number.of.new.dwelling.units = array_values)     # rename main data column
 
 
-#### Lookup tables that will be used to map indices for each observation onto meaningful variables (untangle SDMX format)
+## Lookup tables that will be used to map indices for each observation onto meaningful variables (untangle SDMX format) ##
 
 generalLUT = json %>% as.tbl_json %>%
 enter_object('structure') %>% 
@@ -66,7 +66,7 @@ gather_array %>%                                        # Dive into each array e
 spread_values(array_value = jstring('name')) %>%        # Keep meaningful name for every index position within array 
 mutate(array_key = array.index - 1)                     # Add a column for 0-based indexing of array keys
 
-##### individual LUTS for each informative variable
+## individual LUTS for each informative variable  ##
 
 ###############
 ## TO-DO: filter all on name instead of keyPosition? ##
@@ -76,13 +76,13 @@ buildingTypeLUT = generalLUT %>% filter(keyPosition == 3) %>% select(c(array_key
 regionLUT = generalLUT %>% filter(keyPosition == 5) %>% select(c(array_key, array_value)) 
 timestampLUT = generalLUT %>% filter(name == 'Time') %>% select(c(array_key, array_value)) 
 
-#### convert to named vectors that can be used with dplyr's function 'recode'
+## convert to named vectors that can be used with dplyr's function 'recode'  ##
 
 buildingTypeLUT = setNames(buildingTypeLUT$array_value, buildingTypeLUT$array_key)
 regionLUT = setNames(regionLUT$array_value, regionLUT$array_key)
 timestampLUT = setNames(timestampLUT$array_value, timestampLUT$array_key)
 
-#### Construct final tabular object
+## Construct final tabular object  ##
 
 jsonTabularAnnotated = 
 jsonTabularFiltered %>% mutate(building_type = recode(key4, !!!buildingTypeLUT)) %>% # buildingType LUT
@@ -94,12 +94,13 @@ jsonTabularAnnotated =
 jsonTabularAnnotated %>% select(-c(document.id, array.index, key4, key6, key8))     # get rid of non-informative columns
 
 jsonTabularAnnotated = 
-jsonTabularAnnotated %>% select(c(timestamp, building_type, region, Number.of.new.dwelling.units)) %>% # select final columns in correct order
-arrange(timestamp) # arrange by timestamp
+jsonTabularAnnotated %>% select(c(timestamp, building_type, 
+region, Number.of.new.dwelling.units)) %>%                                          # select final columns in correct order
+arrange(timestamp)                                                                  # arrange by timestamp
 
 
 
-#### Sanity Check: get new dwelling units in New South Wales in July 2011,check that it matches expected 1511.0
+## Sanity Check: get new dwelling units in New South Wales in July 2011,check that it matches expected 1511.0 ##
 
 jsonTabularAnnotated %>% filter(region == 'New South Wales') %>% 
 filter(timestamp == '2011-07-01', building_type == 'Houses') 
@@ -115,19 +116,9 @@ group_by(timestamp, region) %>%
 summarise(total = sum(Number.of.new.dwelling.units))
 
 
-# housesNSW = 
-# jsonTabularAnnotated %>% 
-# filter(region == 'New South Wales') %>% 
-# filter(building_type == 'Houses')
-
-
-
-# head(jsonTabularAnnotated) %>% )
-# jsonTabularAnnotated %>% group_by(region) %>% summarize(total_new = sum(Number.of.new.dwelling.units))
-
 aggrNSW = aggrPerRegion %>% filter(region == 'New South Wales')
 
-## Sanity check to see if the first value is what was exepcted, i.e. 8758:
+## Sanity check to see if the first value is what was exepcted, i.e. 8758: ##
 
 jsonTabularAnnotated %>% 
 filter(region == 'New South Wales') %>% 
@@ -135,84 +126,46 @@ filter(timestamp == '2011-07-01') %>%
 summarise(total = sum(Number.of.new.dwelling.units))
 
 
-## convert into time series
+## convert into time series ##
 
 tsdataNSW = ts(aggrNSW[,'total'], start = c(2011, 7), end = c(2017, 7),  frequency = 12)
 
 
-# Visualize data
+## Visualize data ##
 
-autoplot(tsdataNSW) + ylab('Number of new dwellings in New South Wales') 
+autoplot(tsdataNSW) + ylab('Number of new dwellings in New South Wales')    # standard autoplot from forecast package
 
-ggplot(aggrNSW, aes(timestamp, total)) + 
+ggplot(aggrNSW, aes(timestamp, total)) +                                    # same result with ggplot
 geom_line() + 
 scale_x_date('month') + 
 ylab('Number of new dwellings') + 
 xlab('')
 
 
+ggseasonplot(tsdataNSW, polar = FALSE)                                      # seasonal plot
 
-
-ggseasonplot(tsdataNSW, polar = FALSE)
-ggsubseriesplot(tsdataNSW)
+## Decompose individual components ##
 
 decompose(tsdataNSW) %>% autoplot()
 
+###########################################
+######## Forecasting!       ###############
+###########################################
+
+## Split dataset into train and test, take all but last year as train ##
+train = subset(tsdataNSW, end = length(tsdataNSW) - 12)
 
 
-
-
-ets = tsdataNSW %>% ets() %>% forecast()
+## Fit an ETS model ##
+ets = train %>% ets()                               # fit model
 checkresiduals(ets)
-tsdataNSW %>% ets() %>% forecast() %>% autoplot()
+summary(ets)                                        # check residuals   
+fcETS = forecast(ets, h = 12)                       # forecast last 12 months of data, compare to 
+accuracy(fcETS, tsdataNSW)                          # check accuracy based on RSME on train and test set, looks pretty bad
+autoplot(tsdataNSW, series = 'orig data') +         # visualize overlap of forecast with original data aes(alpha = 0.5)     
+aes(alpha = 0.5) +         
+autolayer(fcETS, series = 'ETS forecast') 
 
-
-hw = tsdataNSW %>% hw(seasonal = 'additive', h = 36, damped = FALSE)
-checkresiduals(hw)
-autoplot(hw)
-
-naive = tsdataNSW %>% snaive( h = 36) 
-autoplot(naive)
-
-tsdataNSW %>% ses(h = 36) %>% autoplot()
-
-
-tsdataNSW %>% ets() %>% forecast(h = 36) %>% autoplot()
-
-autoplot(tsdataNSW)
-autoplot(diff(diff(log(tsdataNSW), lag = 12)))
-ggAcf(diff(diff(log(tsdataNSW), lag = 12)))
-
-
-
-fit = auto.arima(tsdataNSW)
-summary(fit)
-autoplot(forecast(fit, h = 36))
-# auto.arima(diff(diff(log(tsdataNSW), lag = 12))) %>% forecast(h = 36) %>% autoplot()
-
- ## best model so far by visual inspection!!
-Arima(tsdataNSW, order = c(40,1,1), include.constant = TRUE) %>% forecast(h= 36) %>% autoplot() ## best model so far by visual inspection!!
-
-auto.arima(tsdataNSW, lambda = 0) %>% forecast(h = 6) %>% autoplot()
-
-autoplot(tsdataNSW)
-
-library(fpp2)
-data(debitcards)
-autoplot(debitcards)
-fit = auto.arima(debitcards, lambda = 0) 
-fit %>% forecast(h = 36) %>% aut4plot()
-# log-transformation
-
-# ts = ts(jsonTabularAnnotated %>% select(c(timestamp, Number.of.new.dwelling.units)))
-auto.arima(tsdataNSW, lambda = 0, stepwise = FALSE) %>% forecast(h = 18) %>% autoplot()
-
-
-meanf(tsdataNSW, h = 6) %>% autoplot()
-
-autoplot(tsdataNSW)
-
-tsdataNSW %>% nnetar() %>% forecast(PI = TRUE, h = 36) %>% autoplot()
 
 aiccs <- list()
 count = 1

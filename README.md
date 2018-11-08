@@ -57,7 +57,7 @@ Next up, I generate a general lookup table from the raw json, similar to what I 
     enter_object('dimensions') %>% 
     enter_object('observation') %>%                         # navigate to 'observation level'
     gather_array %>%                                        # Dive into each array element
-    spread_values(keyPosition = jstring('keyPosition'),     # Keep keyPosition and name                                                                   information
+    spread_values(keyPosition = jstring('keyPosition'),     # Keep keyPosition and name           information
     name = jstring('name')) %>% 
     enter_object('values') %>%                              # enter values array to get the encoding for keys 4, 6, and 8 (building type, region and time period)
     gather_array %>%                                        # Dive into each array element
@@ -142,10 +142,51 @@ or alternatively using the worked through json file and ggplot2:
 Both should give the same end result:
 
 <img src='/figures/basic_plot_total_dwellings_NSW.png' alt='NSW time series' title='Total number of new dwellings in New South Wales'/>
-        
-      
+
+
+
+It looks like there's both a trend and a seasonal component. The seasonal plot clearly shows that the latest years have more total number of new dwellings:
+
+<img src='/figures/total_dwellings_NSW_seasonal.png' alt='NSW seasonal' title='Total number of new dwellings in New South Wales - Seasonal'/>
+
+Next I will decompose and plot seasonal and trend componentes to visualize them better:
+
+    decompose(tsdataNSW) %>% autoplot()
+
+<img src='/figures/decomposition_total_dwellings_NSW.png' alt='total_dwellings_NSW_decompsition'/>
+
+The plot shows a clear upward trend, as well as a seasonal component. Next I will try to find the most appropriate models to forecast. 
+
+
+#### Using basic models: naive, fmean
+
+#### Using more appropriate models for the dataset: ETS and ARIMA
+
+First let's try fitting an ETS model. Split the data into train and test to evaluate accuracy, take only the last 12 months as the test set.
+
+    train = subset(tsdataNSW, end = length(tsdataNSW) - 12)
+
+Fit the ETS model:
+    ets = train %>% ets()                               # fit model
+    checkresiduals(ets)
+    summary(ets)                                        # check residuals   
+    fcETS = forecast(ets, h = 12)                       # forecast last 12 months of data, compare to 
+    accuracy(fcETS, tsdataNSW)                          # check accuracy based on RSME on train and test set, looks pretty bad
+    autoplot(tsdataNSW, series = 'orig data') +         # visualize overlap of forecast with original data aes(alpha = 0.5)     
+    aes(alpha = 0.5) +         
+    autolayer(fcETS, series = 'ETS forecast') 
+
+Checking the residuals of the model makes it clear that they are actually not really white noise, pval of Ljung-Box is significant:
+
+<img src='figures/ETS_residuals.png'/>
+
+Plotting the predicted time series in the test set (the last 12 months of the time series) makes it obvious that this was not a good forecast:
+
+<img src='figures/ETS_accuracy_test_set.png'/>
+
 #### Using ARIMA models
 
+I will now try to fit an ARIMA model to the data and come up with a better forecast. Since the data have a seasonal components, I will be specifying the seasonal component of 
 
 ### Challenges and conclusions
 
