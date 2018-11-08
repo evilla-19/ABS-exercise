@@ -2,7 +2,7 @@
 
 Main purpose: given housing data from the Australian Bureau of Statistics, transform SDMX JSON into timestamp-indexed tabular format, then perform modeling to come up with a 3-year forecast. Subtasks as outlined below.
 
-In this README, I will walk the reader through the steps that I took to transform the data and to try to come up with a useful forecast. Although the code is written in R for the very simple reason that I am more familiar with it, I found a very similar way to implement the code in python, but I could not fully implement that due to lack of time. 
+In this README, I will walk the reader through the steps that I took to transform the data and to try to come up with a useful forecast. Although the code is written in R for the very simple reason that I am more familiar with it, I found a very similar way to [implement the code in python](https://towardsdatascience.com/an-end-to-end-project-on-time-series-analysis-and-forecasting-with-python-4835e6bf050b), but I could not develop that due to lack of time. 
 
 
 ## Requirements
@@ -16,7 +16,7 @@ tidyjson requires installation through
 
 ### Task 1: transform JSON into tabular
 
-Data was read into R using [tidyjson](), which I was not familiar with before, but seems to allow very neat navigation and extraction from json files.
+Data was read into R using [tidyjson](https://github.com/sailthru/tidyjson), which I was not familiar with before, but seems to allow very neat navigation and extraction from json files.
 
 
     json = read_json('ABS_data.json')
@@ -118,9 +118,9 @@ Sanity check to make sure that values align with an independent extraction:
 
 ### Task 3: 3-year forecast
 
-I will be using the ['forecast']() package to have a go at forecasting the time series. 
+I will be using the ['forecast'](https://cran.r-project.org/web/packages/forecast/index.html) package to have a go at forecasting the time series. 
 
-**Important note**: since I was not familiar with forecasting models before this task, the first thing I did was inform myself to have a guide. I worked through [this datacamp course](https://campus.datacamp.com/courses/forecasting-using-r/) to get acquainted with methods and concepts, which will be applied to the best of my judgement in the following sections.
+**Important note**: since I was not familiar with forecasting models before this task, the first thing I did was inform myself to have a guide. I worked through [this datacamp course](https://campus.datacamp.com/courses/forecasting-using-r/) and [this book](https://otexts.org/fpp2/limits.html) to get acquainted with methods and concepts, which will be applied to the best of my judgement in the following sections.
 
 
 First convert data to a time series. For the purpose of the exercise and simplicity, I decided to focus on total number of new dwellings (regardless of builsing type) in New South Wales only.
