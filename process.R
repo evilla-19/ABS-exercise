@@ -163,81 +163,89 @@ summary(ets)                                        # check residuals
 fcETS = forecast(ets, h = 12)                       # forecast last 12 months of data, compare to 
 accuracy(fcETS, tsdataNSW)                          # check accuracy based on RSME on train and test set, looks pretty bad
 autoplot(tsdataNSW, series = 'orig data') +         # visualize overlap of forecast with original data aes(alpha = 0.5)     
-aes(alpha = 0.5) +         
-autolayer(fcETS, series = 'ETS forecast') 
+autolayer(fcETS, series = 'ETS forecast', alpha = 0.3) 
 
 
-aiccs <- list()
-count = 1
-for(i in 0:1){
-  for(j in 0:1){
-      for(w in 0:1){
-          for(z in 0:1){
-              for(m in 0:1){
-                  for(l in 0:1){
-                      try(
-                          {
-                            fit <- Arima(tsdataNSW, order=c(i,j,w), seasonal = list(order = c(z,m,l), period = 12), method = 'ML');
-                            # acc <- accuracy(fit)
-                            aiccs[[count]] <- fit$aicc # Number 5 indicates the position of MAPE in the accuracy list
-                          }
-                      )
-                        paramCombination = paste0('(p,d,q)', '(', paste(i,j,w, sep = ','), ')', '(P,D,Q)', '(',paste(z,m,l, sep = ','), ')', '(12)', ' - ', fit$aicc)
-                        names(aiccs[[count]]) = paramCombination
-                    print(count)
-                    print(paste0('(p,d,q)', '(', paste(i,j,w, sep = ','), ')', '(P,D,Q)', '(',paste(z,m,l, sep = ','), ')', '(12)', ' - ', fit$aicc))
-                    count = count + 1
-}}}}}}
+## Define parameter space ##
 
-minAICc = min(unlist(aiccs))
-indexMinAICc = which(x == minAICc)
-x[[28]]
+paramSpace = expand.grid(p = 0:1, d = 0:1, q = 0:1, P = 0:1, D = 0:1, Q = 0:1)
 
+## Receiver containers for the output of the model ##
 
+aiccs = list()
+rsme = list()
 
-### Cross validation
+scanParam = function(){
+    for (i in 1:nrow(paramSpace)){
+        print(i)
+        tryCatch({    
+            fit = Arima(train, order=c(paramSpace$p[i],paramSpace$d[i],paramSpace$q[i]), 
+            seasonal = list(order = c(paramSpace$P[i],paramSpace$D[i],paramSpace$Q[i]), period = 12),
+            method = 'ML', include.constant = TRUE)
+            fcOnTestSet = forecast(fit, h = 12)
+            acc = accuracy(fcOnTestSet, tsdataNSW)    
+                }, error=function(e) {cat('error calculating ARIMA model, skipping...')})
+        aiccs[[i]] = fit$aicc
+        rsme[[i]] = acc[4]                                                                  # 4 is the position of the test set RSME
+        cat(
+            'model parameters: ',
+            '(', 
+            paste(paramSpace$p[i],paramSpace$d[i],paramSpace$q[i], sep = ','),
+            ')',
+            '(P,D,Q)',
+            '(',
+            paste(paramSpace$P[i],paramSpace$D[i],paramSpace$Q[i],sep = ','),
+             ')',
+            ' [12]',
+            paste('aicc is: ', fit$aicc),
+            paste('RSME is: ',acc[[4]])
+            )
+        }
+    return(list(aiccs, rsme))
+}
 
-trainNSW = subset(tsdataNSW, end = length(tsdataNSW)-12)
-
-trainNSW %>% Arima(order = c(0,1,1), seasonal = list(order = c(0,1,1), period = 12), method = 'ML') %>% forecast(h = 12) %>% autoplot()
-
-testNSW  = subset(tsdataNSW, start = length(tsdataNSW)-11)
-
-fit = trainNSW %>% Arima(order = c(0,1,1), seasonal = list(order = c(0,1,1), period = 12), method = 'ML') %>% forecast(h = 12)
-
-
-
-autoplot(tsdataNSW) + autolayer(fit) + autolayer(fitted(fit))
-
-autoplot(tsdataNSW)
-autoplot(fit)
+scanningOutput = scanParam()
 
 
-?Arima
-str(Arima(tsdataNSW, order = c(1,1,1)))
+## Select the best model based on minimum AICC ##
 
-accuracy(fit)[2]
+minAICc = grep(min(unlist(scanningOutput[[1]])), scanningOutput[[1]])       #scanningOutput[[1]] contains AICc values
 
-
-
+print(paramSpace[minAICc,])
 
 
+## Fit that model and make the prediction on test set ##
 
 
-library(fpp2)
-data(debitcards)
-autoplot(debitcards)
-fit = auto.arima(debitcards, lambda = 0) 
-fit %>% forecast(h = 36) %>% autoplot()
-# log-transformation
+fit = Arima(train, order=c(0,1,1), seasonal = list(order = c(0,1,1), period = 12),
+            method = 'ML', include.constant = TRUE)
+fcARIMAOnTestSet = forecast(fit, h = 12)
+acc = accuracy(fcARIMAOnTestSet, tsdataNSW)    
 
 
-# mf = meanf(ts[,1],h=12,level=c(90,95),fan=FALSE,lambda=NULL)
-# plot(mf) 
-# accuracy(mf)
+## Plot the prediction and the real data for the last 12 months ##
 
-# plot(ts(jsonTabularAnnotated %>% select(c(timestamp, Number.of.new.dwelling.units))), type = 'o', col = 'red')
+autoplot(tsdataNSW, series = 'orig data') +                         # visualize overlap of forecast with original data aes(alpha = 0.5)              
+autolayer(fcARIMAOnTestSet, series = 'ARIMA forecast', 
+alpha = 0.3) 
 
-# ts()
+## Now produce the forecast for the 3 years as requested ##
 
-## can't really use training-test set, so will use tsCV, check the MSE and compare ETS to auto arima to see which gives the smallest error
+fit = Arima(tsdataNSW, order=c(0,1,1), seasonal = list(order = c(0,1,1), period = 12),
+            method = 'ML')
+fcARIMA = forecast(fit, h = 36)
+
+
+## Check residuals ##
+
+checkresiduals(fit)
+
+## Plot the prediction ## 
+
+autoplot(fcARIMA) + ylab('Number of new dwellings in New South Wales')
+
+## Plot the differenced dataset to make sure that it's looking stationary ##
+
+autoplot(diff(tsdataNSW))
+ggAcf(diff(tsdataNSW))
+

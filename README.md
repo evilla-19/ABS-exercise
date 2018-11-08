@@ -158,15 +158,14 @@ Next I will decompose and plot seasonal and trend componentes to visualize them 
 The plot shows a clear upward trend, as well as a seasonal component. Next I will try to find the most appropriate models to forecast. 
 
 
-#### Using basic models: naive, fmean
-
-#### Using more appropriate models for the dataset: ETS and ARIMA
+#### ETS and ARIMA models
 
 First let's try fitting an ETS model. Split the data into train and test to evaluate accuracy, take only the last 12 months as the test set.
 
     train = subset(tsdataNSW, end = length(tsdataNSW) - 12)
 
 Fit the ETS model:
+
     ets = train %>% ets()                               # fit model
     checkresiduals(ets)
     summary(ets)                                        # check residuals   
@@ -176,32 +175,122 @@ Fit the ETS model:
     aes(alpha = 0.5) +         
     autolayer(fcETS, series = 'ETS forecast') 
 
-Checking the residuals of the model makes it clear that they are actually not really white noise, pval of Ljung-Box is significant:
+Checking the residuals of the model shows that they are quite close to being normally distributed, although the Ljung-Box test is actually significant.
 
 <img src='figures/ETS_residuals.png'/>
 
-Plotting the predicted time series in the test set (the last 12 months of the time series) makes it obvious that this was not a good forecast:
+Plotting the predicted time series in the test set (the last 12 months of the time series) makes it obvious that this was not the optimal forecast:
 
 <img src='figures/ETS_accuracy_test_set.png'/>
 
 #### Using ARIMA models
 
-I will now try to fit an ARIMA model to the data and come up with a better forecast. Since the data have a seasonal components, I will be specifying the seasonal component of 
+I will now try to fit an ARIMA model to the data and come up with a better forecast. Since the data have a seasonal components, I will be specifying the seasonal component of the model. In an attempt to systematize the process, I will scan the whole parameter space for values between 0 and 1 for p, d, q, P, D and Q, producing 64 models.
 
-### Challenges and conclusions
+Generate the parameter space and come up with a function that will iterate through the parameters and record AICc values, as well as RSME values for the test set:
+
+    paramSpace = expand.grid(p = 0:1, d = 0:1, q = 0:1, P = 0:1, D = 0:1, Q = 0:1)
+
+    aiccs = list()          # container elment for AICc values
+    rsme = list()           # container element for test set rsme values
+
+    scanParam = function(){
+        for (i in 1:nrow(paramSpace)){
+            print(i)
+            tryCatch({    
+                fit = Arima(train, order=c(paramSpace$p[i],paramSpace$d[i],paramSpace$q[i]), 
+                seasonal = list(order = c(paramSpace$P[i],paramSpace$D[i],paramSpace$Q[i]), period = 12),
+                method = 'ML', include.constant = TRUE)
+                fcOnTestSet = forecast(fit, h = 12)
+                acc = accuracy(fcOnTestSet, tsdataNSW)    
+                    }, error=function(e) {cat('error calculating ARIMA model, skipping...')})
+            aiccs[[i]] = fit$aicc
+            rsme[[i]] = acc[4]                                                                  # 4 is the position of the test set RSME
+            cat(
+                'model parameters: ',
+                '(', 
+                paste(paramSpace$p[i],paramSpace$d[i],paramSpace$q[i], sep = ','),
+                ')',
+                '(P,D,Q)',
+                '(',
+                paste(paramSpace$P[i],paramSpace$D[i],paramSpace$Q[i],sep = ','),
+                ')',
+                ' [12]',
+                paste('aicc is: ', fit$aicc),
+                paste('RSME is: ',acc[[4]])
+                )
+            }
+        return(list(aiccs, rsme))
+    }
+
+Execute the function, then get the minimum value for AICc and print out the parameter combination:
+
+    scanningOutput = scanParam()
+    
+    minAICc = grep(min(unlist(scanningOutput[[1]])), scanningOutput[[1]])       #scanningOutput[[1]] contains AICc values
+
+    print(paramSpace[minAICc,])
+
+
+It looks like the best model is one with parameters:
+
+(0,1,1) (0,1,1) [12]
+
+So I will now fit that model to the training data and visualize its performance on the test set:
+
+    fit = Arima(train, order=c(0,1,1), seasonal = list(order = c(0,1,1), period = 12),
+                method = 'ML', include.constant = TRUE)
+    fcARIMAOnTestSet = forecast(fit, h = 12)
+    acc = accuracy(fcARIMAOnTestSet, tsdataNSW)    
+
+    autoplot(tsdataNSW, series = 'orig data') +                         # visualize overlap of forecast with original data aes(alpha = 0.5)              
+    autolayer(fcARIMAOnTestSet, series = 'ARIMA forecast', 
+    alpha = 0.3) 
+
+<img src='figures/ARIMA_accuracy_test_set.png'/>
+
+It's not a perfect fit but it seems to be capturing the seasonality and the forecast ist reasonably close to the 12 last months of data that were reserved for evaluation. 
+
+Finally, let's produce the forecast for the 3 years as requested in the exercise and check the residuals:
+
+    fit = Arima(tsdataNSW, order=c(0,1,1), seasonal = list(order = c(0,1,1), period = 12),
+                method = 'ML')
+    fcARIMA = forecast(fit, h = 36)
+    checkresiduals(fit)
+
+<img src='figures/ARIMA_residuals.png' />
+
+These look reasonsably normally distributed and the Ljung-Box test is non-significant, although borderline, probably due to the first flat part of the residuals data.
+
+Finally, let's plot the 3 year forecast:
+
+<img src='figures/ARIMA_prediction_3_years.png' />
+
+The prediction seems to be good enough in capturing the upward trend and some of the seasonality, although some more transformations may be needed to provide an even better fit for the seasonality component. 
+
+## Conclusions and thoughts
+
+I came up with an ARIMA model that does a reasonable prediction of 3 years ahead for the number of new dwellings in New South Wales. There are clearly points of improvement, especially regarding capturing the seasonality of the time series. A couple of thoughts on how to proceed here:
+
+1. An obvious way to go would be to scan a wider parameter space and see if there are any parameter combinations that would yield a better forecast
+2. Apply a neuronal network approach to forecast, as described [here](https://blogs.rstudio.com/tensorflow/posts/2017-12-20-time-series-forecasting-with-recurrent-neural-networks/) or [here](http://kourentzes.com/forecasting/2017/02/10/forecasting-time-series-with-neural-networks-in-r/)
+3. A big limitation in this particular time series is that there is limited historical information about the dwellings so it's very hard to make an accurate prediction for 3 years ahead. Other sources of information might help in improving the forecast.
+4. There is a package from Robert Hyndman to do multiseries forecasting and to integrate better with the tidyverse called [fable](https://github.com/tidyverts/fable), which might be worth trying for this purpose, especially to evaluate forecasts for other time series, such as those grouped by region or building type.
+
+
+### Challenges and personal conclusions
 
 Finally, I would like to spend a few lines on the challenges that this exercise posed, how I tried to tackle them, as well as on some of the thoughts and conclusions I was able to draw from the exercise. 
 
 #### Challenges
 
-1. Challenge # 1: reading a json file into R and **navigating it**
-    1. The answer here was not too
+1. Challenge # 1: reading a json file into R and navigating it
 2. Challenge # 2: Understand the structure of the SDMX-JSON
 3. Challenge # 3: Working with time series
 4. Challenge # 4: Understanding basics of forecasting
-5.  
 
-#### Thoughts and conclusions - a.k.a. 'how I would do things differently if faced with the same task again'
+
+#### Thoughts and conclusions on the personal side
 
 1. I learned about tidyjson and know how to use it and how to navigate, gather arrays and expand on relevant sections of data. Happy that I found the tidy version of a json reader!
 2. SDMX-JSON structure: not sure I would greatly support this kind of data presentation...but I know how to wrap my head around it and handle it now!
