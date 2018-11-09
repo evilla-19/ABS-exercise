@@ -228,7 +228,7 @@ alpha = 0.3)
 ## Now produce the forecast for the 3 years as requested ##
 
 fit = Arima(tsdataNSW, order=c(0,1,1), seasonal = list(order = c(0,1,1), period = 12),
-            method = 'ML')
+            method = 'ML', include.constant = TRUE)
 fcARIMA = forecast(fit, h = 36)
 
 
